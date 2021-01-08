@@ -23,7 +23,7 @@
                 border-style: solid;
             }
             #vis-container{
-                margin:0 100px 0 100px
+                margin:0 2% 0 2%
             }
             p{
                 font-size: 14px;
@@ -52,6 +52,8 @@
         var tooltip = d3.select("body").append("div")	
             .attr("class", "tooltip")				
             .style("opacity", 0);
+
+        var dateOutputFormat = d3.timeFormat("%d %B %Y");
 
         const margin ={
             left:50,
@@ -87,23 +89,6 @@
 
             //health tracker
 
-            const x = d3.scaleUtc()
-                .range([0, width])
-                .domain(d3.extent(data, d => new Date(d.date)))
-
-            const y = d3.scaleLinear()
-                .range([height,0])
-                .domain([0,100])
-
-            const size = d3.scaleLinear()
-                .range([0,10])
-                .domain([0,5])
-
-            const line = d3.line()
-                .x(d => x(d.date))
-                .y(d => y(d.sumVal))
-                .curve(d3.curveMonotoneX)
-
             wrangled = lines.map(l => {
                 return {
                     name:l,
@@ -117,6 +102,25 @@
                     })
                 }
             })
+
+            console.log(wrangled)
+
+            const x = d3.scaleUtc()
+                .range([0, width])
+                .domain(d3.extent(data, d => new Date(d.date)))
+
+            const y = d3.scaleLinear()
+                .range([height,0])
+                .domain([0, d3.max(wrangled, d => d3.max(d.values, j => j.sumVal))])
+
+            const size = d3.scaleLinear()
+                .range([0,15])
+                .domain([0,5])
+
+            const line = d3.line()
+                .x(d => x(d.date))
+                .y(d => y(d.sumVal))
+                .curve(d3.curveMonotoneX)
 
             const path = svg.append("g")
                 .selectAll("path")
@@ -142,7 +146,7 @@
                     tooltip.transition()		
                         .duration(200)		
                         .style("opacity", .9);		
-                    tooltip.html(d.date + '<br>' + d.name.charAt(0).toUpperCase() + d.name.slice(1) + '<br>' + d.dayVal)	
+                    tooltip.html(dateOutputFormat(d.date) + '<br>' + d.name.charAt(0).toUpperCase() + d.name.slice(1) + ' ' + d.dayVal + ' / 5')	
                         .style("left", (event.pageX) + "px")		
                         .style("top", (event.pageY - 28) + "px");
                 })
@@ -154,8 +158,8 @@
 
             // weight tracker
             const weight = d3.scaleLinear()
-                .range([height,0])
-                .domain([75,85])
+                .range([0,height])
+                .domain(d3.extent(data.filter(d => d.weight_kg != 0), d => d.weight_kg))
 
             const weightLine = d3.line()
                 .x(d => x(new Date(d.date)))
@@ -171,7 +175,7 @@
                 .attr("d", weightLine)
                 .attr("fill", "none")
                 .attr("stroke", d => d3.interpolateViridis(color('weight')))
-                .attr("stroke-width", 1.5)
+                .attr("stroke-width", 3)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round");
 
@@ -187,7 +191,7 @@
                     tooltip.transition()		
                         .duration(200)		
                         .style("opacity", .9);		
-                    tooltip.html(d.date + '<br>Weight<br>' + d.weight_kg + ' kg')	
+                    tooltip.html(dateOutputFormat(new Date(d.date)) + '<br>Weight ' + d.weight_kg + ' kg')	
                         .style("left", (event.pageX) + "px")		
                         .style("top", (event.pageY - 28) + "px");
                 })
@@ -228,16 +232,11 @@
             svg.append("g")
                 .attr("transform", `translate(0,${height})`)
                 .attr("id", "x-axis")
-                .call(d3.axisBottom(x))
+                .call(d3.axisBottom(x).ticks(10))
 
             svg.append("g")
                 .attr("id", "y-axis")
-                .call(d3.axisLeft(y))
-
-            svg.append("g")
-                .attr("transform", `translate(${width},0)`)
-                .attr("id", "weight-axis")
-                .call(d3.axisRight(weight))
+                .call(d3.axisLeft(weight).tickFormat(d => d + ' kg').ticks(5))
 
         })
 
