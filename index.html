@@ -31,8 +31,11 @@
                 pointer-events: none;
                 border-style: solid;
             }
-            #vis-container{
+            #description{
                 margin:0 2% 0 2%
+            }
+            #vis-container{
+                margin:0
             }
             p{
                 font-size: 14px;
@@ -56,13 +59,15 @@
     </head>
     <body>         
         <h1>Health Tracker</h1>
-        <div id="vis-container">
+        <div id="description">
             <p>After countless New Year resolutions from past years to get fit that have failed, I wanted to change my mindset and approach.
             Building healthy habbits is more than just working out, so I wanted to focus on how well i am eating, drinking, sleeping, exercising and my general mood.
             Each day I am ranking each of these activities out of 5, focusing on the ones I am doing well, and aiming for a good day overall.
             While i may have the odd day where i don't do a lot of working out, or decide to have a pizza, I hope to avoid a 'zero days' and hope that I can balance out any unhealthy choices with healthy ones.
             The scale is arbitrary, and will build from the progress of the day before; it will never go down.</p>
             <p>Before you say it... Yes, I am tracking my weight. While i know it is not a good metric for good health, I also know that making these healthier choices should result in some weight loss, as i am currently heavier than i usually am.</p>
+        </div>
+        <div id="vis-container">
         </div>
     </body>
     <script src="https://d3js.org/d3.v6.min.js"></script>
@@ -79,9 +84,9 @@
         // margins for SVG
         const margin ={
             left:70,
-            right:50,
-            top:50,
-            bottom:100
+            right:40,
+            top:20,
+            bottom:80
         }
 
         // responsive width & height
