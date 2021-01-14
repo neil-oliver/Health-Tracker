@@ -7,10 +7,19 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="preconnect" href="https://fonts.gstatic.com">
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;600&display=swap" rel="stylesheet">
         <style>
             body{
                 font-family: 'Poppins', sans-serif;
+                background-color: rgb(255, 255, 250);
+                margin: 0;
+            }
+            h1{
+                margin: 0;
+                padding:10px 0 10px 2%;
+                background-color: #29516E;
+                color:white;
+
             }
             div.tooltip {
                 position: absolute;
@@ -33,13 +42,21 @@
                 transition: all 0.5s ease-in-out;
             }
             .grid{
+                font-family: 'Poppins', sans-serif;
+                font-size: 0.8em;
+                font-weight: 300;
+            }
+            .grid path{
+                color:rgba(0,0,0,0)
+            }
+            .grid line{
                 color:lightgrey
             }
         </style>
     </head>
     <body>         
+        <h1>Health Tracker</h1>
         <div id="vis-container">
-            <h1>Health Tracker</h1>
             <p>After countless New Year resolutions from past years to get fit that have failed, I wanted to change my mindset and approach.
             Building healthy habbits is more than just working out, so I wanted to focus on how well i am eating, drinking, sleeping, exercising and my general mood.
             Each day I am ranking each of these activities out of 5, focusing on the ones I am doing well, and aiming for a good day overall.
@@ -61,7 +78,7 @@
 
         // margins for SVG
         const margin ={
-            left:50,
+            left:70,
             right:50,
             top:50,
             bottom:100
@@ -69,7 +86,7 @@
 
         // responsive width & height
         const svgWidth = parseInt(d3.select('#vis-container').style('width'), 10)
-        const svgHeight = svgWidth / 2
+        const svgHeight = (svgWidth / 3) + 200
 
         // helper calculated variables for inner width & height
         const height = svgHeight - margin.top - margin.bottom
@@ -85,11 +102,6 @@
 
         // array of heath trackers
         const lines = ['food', 'water', 'exercise', 'mood', 'sleep']
-
-        // colour scales for all lines and legend
-        const color = d3.scaleBand()
-            .domain([...lines, 'weight'])
-            .range([0,1])
 
         // load data
         d3.csv('./health_tracker.csv').then(data => {
@@ -140,53 +152,48 @@
                 .domain([0,5])
 
             // weight scale for Y axis
+            let weightExtent = d3.extent(data.filter(d => d.weight_kg != 0), d => d.weight_kg)
             const weight = d3.scaleLinear()
                 .range([0,height])
-                .domain(d3.extent(data.filter(d => d.weight_kg != 0), d => d.weight_kg))
+                .domain([weightExtent[0]*0.99,weightExtent[1]*1.01]) //extend each side by 1%
 
             //band scale
             const legend = d3.scaleBand()
                 .range([0,width])
                 .domain([...lines, 'weight'])
 
+            // colour scales for all lines and legend
+            const color = d3.scaleOrdinal()
+                .domain([...lines, 'weight'])
+                .range(['#47acc7','#42a18b', '#f3ad37', '#B57ED6', '#f28334', '#ef6266'])
+
             ////////////////////////////////////
             ///////////////axis/////////////////
             ////////////////////////////////////
 
             // X Axis 
-            const xAxis = d3.axisBottom(x).ticks(10)
-
-            //append date based X axis
-            svg.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .attr("id", "x-axis")
-                .call(xAxis)
+            const xAxis = d3.axisBottom(x).ticks(3).tickPadding(10)
             
             // X gridline
             svg.append("g")
                 .attr("transform", `translate(0,${height})`)
                 .attr("class", 'grid')
-                .attr("id", "x-axis-grid")
-                .call(xAxis.tickSize(-height).tickFormat(''))
+                .attr("id", "x-axis")
+                .call(xAxis.tickSizeInner(-height))
             
             // Y Axis
-            const yAxis = d3.axisLeft(weight).tickFormat(d => d + ' kg').ticks(5)
-
-            // append formatted Y (kg) axis
-            svg.append("g")
-                .attr("id", "y-axis")
-                .call(yAxis)
+            const yAxis = d3.axisLeft(weight).tickFormat(d => d + ' kg').ticks(3).tickPadding(10)
 
             // Y gridline
             svg.append("g")
                 .attr("class", 'grid')
-                .attr("id", "y-axis-grid")
-                .call(yAxis.tickSize(-width).tickFormat(''))
+                .attr("id", "y-axis")
+                .call(yAxis.tickSize(-width))
 
             ////////////////////////////////////
-            //////////health tracker////////////
+            ////////// health tracker///////////
             ////////////////////////////////////
-            
+
             // line generator
             const line = d3.line()
                 .x(d => x(d.date))
@@ -194,24 +201,25 @@
                 .curve(d3.curveMonotoneX)
 
             // heath tracker lines
-            const path = svg.append("g")
+            const pathStroke = svg.append("g")
                 .selectAll("path")
                 .data(wrangled)
                 .join("path")
-                .style("mix-blend-mode", "multiply")
                 .attr("d", d => line(d.values))
                 .attr("fill", "none")
-                .attr("stroke", d => d3.interpolateViridis(color(d.name)))
-                .attr("stroke-width", 1.5)
+                .attr("stroke", "white")
+                .attr("stroke-width", 5.5)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round");
-
+            
             // heath tracker points
             const points = svg.append("g")
                 .selectAll("circle")
                 .data(wrangled.map(d => d.values).flat())
                 .join("circle")
-                .attr("fill", d => d3.interpolateViridis(color(d.name)))
+                .attr("fill", d => color(d.name))
+                .attr("stroke", "white")
+                .attr("stroke-width", 2)
                 .attr('cx', d => x(d.date))
                 .attr('cy', d => y(d.sumVal))
                 .attr('r', d => size(d.dayVal))
@@ -229,6 +237,18 @@
                         .style("opacity", 0);
                 })
 
+            // heath tracker lines
+            const path = svg.append("g")
+                .selectAll("path")
+                .data(wrangled)
+                .join("path")
+                .attr("d", d => line(d.values))
+                .attr("fill", "none")
+                .attr("stroke", d => color(d.name))
+                .attr("stroke-width", 1.5)
+                .attr("stroke-linejoin", "round")
+                .attr("stroke-linecap", "round");
+
             ////////////////////////////////////
             ///////////weight line//////////////
             ////////////////////////////////////
@@ -240,15 +260,14 @@
                 .curve(d3.curveMonotoneX)
                 (data.filter(d => d.weight_kg != 0));
 
-            // weight line
-            const weightPath = svg.append("g")
+            const weightPathStroke = svg.append("g")
                 .selectAll("path")
                 .data([1])
                 .join("path")
                 .attr("d", weightLine)
                 .attr("fill", "none")
-                .attr("stroke", d => d3.interpolateViridis(color('weight')))
-                .attr("stroke-width", 3)
+                .attr("stroke", "white")
+                .attr("stroke-width", 12)
                 .attr("stroke-linejoin", "round")
                 .attr("stroke-linecap", "round");
             
@@ -257,10 +276,12 @@
                 .selectAll("circle")
                 .data(data.filter(d => d.weight_kg != 0))
                 .join("circle")
-                .attr("fill", d => d3.interpolateViridis(color('weight')))
+                .attr("fill", d => color('weight'))
                 .attr('cx', d => x(new Date(d.date)))
                 .attr('cy', d => weight(d.weight_kg))
-                .attr('r', 5)
+                .attr('r', 10)
+                .attr("stroke", 'white')
+                .attr("stroke-width", 4)
                 .on("mouseover", function(event, d){
                     tooltip.transition()		
                         .duration(200)		
@@ -275,6 +296,18 @@
                         .style("opacity", 0);
                 })
 
+            // weight line
+            const weightPath = svg.append("g")
+                .selectAll("path")
+                .data([1])
+                .join("path")
+                .attr("d", weightLine)
+                .attr("fill", "none")                
+                .attr("stroke-width", 6)
+                .attr("stroke", d => color('weight'))
+                .attr("stroke-linejoin", "round")
+                .attr("stroke-linecap", "round");
+
             ////////////////////////////////////
             //////////////legend////////////////
             ////////////////////////////////////
@@ -284,7 +317,7 @@
                 .selectAll("rect")
                 .data([...lines, 'weight'])
                 .join("rect")
-                .attr("fill", d => d3.interpolateViridis(color(d)))
+                .attr("fill", d => color(d))
                 .attr('x', d =>  legend(d))
                 .attr('y', height + 50)
                 .attr("height", 10)
@@ -296,7 +329,7 @@
                 .selectAll("text")
                 .data([...lines, 'weight'])
                 .join("text")
-                .attr("fill", d => d3.interpolateViridis(color(d)))
+                .attr("fill", 'black')
                 .attr('x', d =>  legend(d) + 15)
                 .attr('y', height + 59)
                 .attr('font-size', 10)
